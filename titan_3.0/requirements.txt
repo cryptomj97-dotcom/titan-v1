@@ -1,0 +1,34 @@
+# TITAN 3.0 Requirements
+# Core dependencies for the trading system
+
+# Data handling
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Configuration
+pyyaml>=6.0
+
+# Data sources
+yfinance>=0.2.0
+requests>=2.31.0
+
+# Machine Learning
+scikit-learn>=1.3.0
+scipy>=1.11.0
+
+# Optional: Advanced features
+# PyWavelets>=1.1.1  # For wavelet denoising
+# hmmlearn>=0.3.0    # For HMM regime detection
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# Development
+black>=23.0.0
+flake8>=6.1.0
+mypy>=1.5.0
+
+# Frontend dependencies
+flask==3.0.0
+flask-cors==4.0.0

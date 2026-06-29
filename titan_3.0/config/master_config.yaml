@@ -1,0 +1,193 @@
+# TITAN 3.0 - Master Configuration File
+# This file orchestrates all 11 phases of the system.
+
+system:
+  name: "TITAN 3.0"
+  version: "3.0.0"
+  environment: "production"  # options: development, staging, production
+  log_level: "INFO"
+  data_dir: "./data"
+  models_dir: "./models"
+  logs_dir: "./logs"
+
+# Phase 1 & 2: Core & Data Pipeline
+data:
+  sources:
+    - name: "yahoo"
+      enabled: true
+      priority: 1
+      config:
+        retries: 3
+        timeout: 10
+    - name: "alpha_vantage"
+      enabled: false
+      priority: 2
+      api_key: "${ALPHA_VANTAGE_KEY}"
+  
+  cache:
+    enabled: true
+    ttl_seconds: 300
+    max_size_mb: 500
+  
+  circuit_breaker:
+    failure_threshold: 5
+    recovery_timeout: 60
+
+# Phase 3: Feature Engineering & Regime Detection
+features:
+  technical_indicators:
+    - "RSI"
+    - "MACD"
+    - "Bollinger Bands"
+    - "ATR"
+    - "ADX"
+  statistical_features:
+    - "rolling_mean"
+    - "rolling_std"
+    - "z_score"
+    - "hurst_exponent"
+  
+regime_detection:
+  methods:
+    - "tda"  # Topological Data Analysis
+    - "hmm"  # Hidden Markov Model
+    - "volatility"
+  ensemble_weighting: true
+  min_confidence: 0.75
+
+# Phase 4: Automated Strategy Lifecycle
+strategies:
+  genetic_algorithm:
+    population_size: 50
+    generations: 20
+    mutation_rate: 0.1
+    crossover_rate: 0.8
+    elitism_count: 5
+  
+  walk_forward:
+    train_window_days: 365
+    test_window_days: 90
+    step_days: 30
+    min_sharpe: 1.0
+
+# Phase 5: Reinforcement Learning
+rl:
+  enabled: true
+  algorithm: "PPO"  # PPO, TD3, SAC
+  model_path: "./models/ppo_titan.zip"
+  training:
+    total_timesteps: 100000
+    learning_rate: 0.0003
+    gamma: 0.99
+    gae_lambda: 0.95
+    clip_range: 0.2
+  action_space:
+    type: "discrete"  # discrete (Buy/Sell/Hold) or continuous
+    options: [0, 1, 2] # 0: Hold, 1: Buy, 2: Sell
+
+# Phase 6: Alternative Data
+alt_data:
+  news:
+    enabled: true
+    provider: "newsapi" # newsapi, benzinga
+    api_key: "${NEWS_API_KEY}"
+    sentiment_model: "vader"
+  
+  social_media:
+    enabled: false
+    platforms: ["twitter", "reddit"]
+  
+  nlp:
+    stop_words_removal: true
+    lemmatization: true
+    entity_recognition: true
+
+# Phase 7: Adversarial Debate System
+debate:
+  enabled: true
+  agents:
+    bull:
+      risk_tolerance: "high"
+      focus: ["momentum", "breakout"]
+    bear:
+      risk_tolerance: "low"
+      focus: ["mean_reversion", "fundamentals"]
+    judge:
+      threshold_for_approval: 0.6
+  max_rounds: 3
+  timeout_seconds: 10
+
+# Phase 8: Execution & Risk Management
+risk:
+  max_drawdown_pct: 5.0
+  daily_loss_limit_pct: 2.0
+  var_confidence_level: 0.95
+  kelly_criterion:
+    enabled: true
+    fraction: 0.5 # Half-Kelly
+  volatility_targeting:
+    enabled: true
+    target_volatility: 0.15
+  
+execution:
+  broker: "mock" # mock, alpaca, ibkr
+  slippage_model: "volume_dependent"
+  commission_per_share: 0.005
+  max_order_size_pct: 10.0
+  kill_switch:
+    enabled: true
+    trigger_drawdown_pct: 10.0
+
+# Phase 9: API Layer
+api:
+  host: "0.0.0.0"
+  port: 8000
+  cors_origins: ["*"]
+  auth:
+    enabled: false
+    api_keys: []
+  websocket:
+    enabled: true
+    ping_interval: 30
+
+# Phase 10: Backtesting
+backtest:
+  start_date: "2022-01-01"
+  end_date: "2023-12-31"
+  initial_capital: 100000
+  benchmark: "^GSPC"
+  transaction_costs:
+    slippage_pct: 0.05
+    commission_pct: 0.1
+  monte_carlo:
+    enabled: true
+    simulations: 1000
+
+# Phase 11: Monitoring & Alerting
+monitoring:
+  dashboard_port: 8001
+  metrics_interval_seconds: 5
+  alerts:
+    email:
+      enabled: false
+      smtp_server: "smtp.gmail.com"
+      recipients: []
+    slack:
+      enabled: false
+      webhook_url: "${SLACK_WEBHOOK}"
+    thresholds:
+      latency_ms: 200
+      error_rate_pct: 1.0
+      max_drawdown_alert: 3.0
+
+# Assets to Trade
+assets:
+  - symbol: "AAPL"
+    enabled: true
+    class: "equity"
+  - symbol: "BTC-USD"
+    enabled: true
+    class: "crypto"
+  - symbol: "EURUSD=X"
+    enabled: false
+    class: "forex"
