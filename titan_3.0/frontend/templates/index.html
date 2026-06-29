@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TITAN v3.0 — Quantitative AI Trading Intelligence</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="container">
+  <!-- Header -->
+  <header>
+    <div class="nav">
+      <div class="logo">
+        <div class="logo-mark">T</div>
+        <span>TITAN 3.0</span>
+      </div>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#pipeline">Pipeline</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+      </div>
+      <div class="nav-cta">
+        <div class="live-pill"><div class="dot"></div> LIVE</div>
+        <button class="btn-nav">Login</button>
+        <button class="btn-nav" style="background:var(--orange);border-color:var(--orange);color:white">Get Started</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-badge"><div class="dot"></div> TITAN 3.0 NOW LIVE</div>
+    <h1>Quantitative AI Trading <span class="accent">Intelligence</span></h1>
+    <p class="sub">Advanced mathematical frameworks, resilient data pipelines, and automated strategy discovery powered by topological data analysis and reinforcement learning.</p>
+    
+    <!-- Hero Selector -->
+    <div class="hero-selector">
+      <select id="mkt">
+        <option value="CRYPTO">Crypto</option>
+        <option value="STOCKS">Stocks</option>
+        <option value="FOREX">Forex</option>
+        <option value="FUTURES">Futures</option>
+      </select>
+      <input type="text" id="sym" placeholder="Enter symbol (e.g., BTCUSDT, AAPL)" value="BTCUSDT">
+      <button id="goBtn" class="btn-hero" onclick="runAnalysis()">▶ ANALYZE LIVE</button>
+    </div>
+    
+    <!-- Quick Picks -->
+    <div class="quick-picks">
+      <div class="chip" onclick="setSymbol('BTCUSDT')">BTC/USDT <span class="tag">HOT</span></div>
+      <div class="chip" onclick="setSymbol('ETHUSDT')">ETH/USDT</div>
+      <div class="chip" onclick="setSymbol('AAPL')">AAPL</div>
+      <div class="chip" onclick="setSymbol('TSLA')">TSLA</div>
+      <div class="chip" onclick="setSymbol('EURUSD')">EUR/USD</div>
+      <div class="chip" onclick="setSymbol('GC=F')">Gold</div>
+    </div>
+    
+    <!-- Hero Stats -->
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="n"><span class="o">50+</span></div>
+        <div class="l">Technical Indicators</div>
+      </div>
+      <div class="hero-stat">
+        <div class="n"><span class="o">5</span></div>
+        <div class="l">Independent Clusters</div>
+      </div>
+      <div class="hero-stat">
+        <div class="n"><span class="o">9</span></div>
+        <div class="l">Analysis Stages</div>
+      </div>
+      <div class="hero-stat">
+        <div class="n"><span class="o">&lt;2s</span></div>
+        <div class="l">Latency</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Ticker Strip -->
+  <div class="ticker-strip">
+    <div class="ticker-track" id="tickerTrack">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <!-- Live Price Panel -->
+  <div class="live-panel" id="livePanel">
+    <div class="live-inner">
+      <div class="live-head">
+        <div class="live-label"><div class="dot"></div> LIVE PRICE FEED</div>
+        <div class="ws-badge on" id="wsBadge">WS CONNECTED</div>
+        <div class="live-time" id="liveTime">--:--:--</div>
+      </div>
+      <div class="live-price-main">
+        $<span id="livePrice">--</span>
+        <span class="live-change" id="liveChange">--</span>
+      </div>
+      <div class="live-grid">
+        <div class="live-cell"><div class="l">24h High</div><div class="v" id="liveHigh">--</div></div>
+        <div class="live-cell"><div class="l">24h Low</div><div class="v" id="liveLow">--</div></div>
+        <div class="live-cell"><div class="l">24h Volume</div><div class="v" id="liveVol">--</div></div>
+        <div class="live-cell"><div class="l">Last Update</div><div class="v" id="liveLast">--</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress Bar -->
+  <div class="prog-wrap" id="progWrap">
+    <div class="prog-inner">
+      <div class="prog-bar"><div class="prog-fill" id="progFill"></div></div>
+      <div class="prog-txt"><span id="progText">Initializing...</span><b id="progPct">0%</b></div>
+    </div>
+  </div>
+
+  <!-- War Room -->
+  <div class="warroom" id="warroom">
+    <div class="wr-grid">
+      <!-- Left Panel: Steps -->
+      <div class="panel">
+        <h3>PIPELINE STAGES <span class="act" id="ptime">--s</span></h3>
+        <div class="steps">
+          <div class="step" data-s="FETCH"><div class="sdot">✓</div><span>1. Fetch OHLCV Data</span></div>
+          <div class="step" data-s="REGIME"><div class="sdot">✓</div><span>2. Regime Detection</span></div>
+          <div class="step" data-s="CLUSTERS"><div class="sdot">✓</div><span>3. Cluster Analysis</span></div>
+          <div class="step" data-s="STATS"><div class="sdot">✓</div><span>4. Statistical Models</span></div>
+          <div class="step" data-s="ML"><div class="sdot">✓</div><span>5. ML Scoring</span></div>
+          <div class="step" data-s="GATE"><div class="sdot">✓</div><span>6. Pre-Signal Gate</span></div>
+          <div class="step" data-s="BT"><div class="sdot">✓</div><span>7. Walk-Forward Backtest</span></div>
+          <div class="step" data-s="DEBATE"><div class="sdot">✓</div><span>8. AI Debate</span></div>
+          <div class="step" data-s="SIGNAL"><div class="sdot">✓</div><span>9. Generate Signal</span></div>
+        </div>
+      </div>
+
+      <!-- Center Panel: Chart & Analysis -->
+      <div>
+        <div class="panel">
+          <h3>MARKET REGIME <span class="act" id="sregime">--</span></h3>
+          <div id="pRegime" style="display:none"></div>
+          <div id="regimeBox"></div>
+        </div>
+        
+        <div class="panel">
+          <h3>CLUSTER CONSENSUS <span class="act" id="ccount">--</span></h3>
+          <div id="pClusters" style="display:none"></div>
+          <div id="clusterBox"></div>
+        </div>
+        
+        <div class="panel">
+          <h3>STATISTICAL ANALYSIS</h3>
+          <div id="pStats" style="display:none"></div>
+          <div id="statsBox"></div>
+        </div>
+        
+        <div class="panel">
+          <h3>ML SIGNAL SCORE <span class="act" id="sml">--</span></h3>
+          <div id="pMl" style="display:none"></div>
+          <div id="mlBox"></div>
+        </div>
+      </div>
+
+      <!-- Right Panel: Gate, Backtest, Meter -->
+      <div>
+        <div class="panel">
+          <h3>PRE-SIGNAL GATE</h3>
+          <div id="pGate" style="display:none"></div>
+          <div class="g-list" id="gateList"></div>
+        </div>
+        
+        <div class="panel">
+          <h3>WALK-FORWARD BACKTEST <span class="act" id="sq">--</span></h3>
+          <div id="pBt" style="display:none"></div>
+          <div class="bt-grid" id="btGrid"></div>
+        </div>
+        
+        <div class="panel">
+          <h3>FINAL CONFIDENCE METER</h3>
+          <div class="meter-wrap">
+            <svg class="meter-svg" viewBox="0 0 220 120">
+              <defs>
+                <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" style="stop-color:#EF4444"/>
+                  <stop offset="50%" style="stop-color:#F59E0B"/>
+                  <stop offset="100%" style="stop-color:#10B981"/>
+                </linearGradient>
+              </defs>
+              <path d="M 10 110 A 100 100 0 0 1 210 110" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="20" stroke-linecap="round"/>
+              <path id="marc" d="M 10 110 A 100 100 0 0 1 210 110" fill="none" stroke="url(#grad)" stroke-width="20" stroke-linecap="round" stroke-dasharray="515.22" stroke-dashoffset="515.22"/>
+            </svg>
+            <div class="meter-center">
+              <div class="meter-val" id="mval">0.0</div>
+              <div class="meter-pct">%</div>
+              <div class="meter-lbl">Confidence Score</div>
+            </div>
+            <div class="sub-bars">
+              <div class="sub-bar"><div class="lbl">Quant</div><div class="val" id="sqnt">--</div></div>
+              <div class="sub-bar"><div class="lbl">Debate</div><div class="val" id="sd">--</div></div>
+              <div class="sub-bar"><div class="lbl">ML</div><div class="val" id="sml2">--</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart Panel -->
+    <div class="panel" style="margin-top:14px">
+      <h3>PRICE CHART <span class="act" id="tfSwitch">
+        <button class="tf-btn active" data-tf="1h">1H</button>
+        <button class="tf-btn" data-tf="4h">4H</button>
+        <button class="tf-btn" data-tf="1d">1D</button>
+        <button class="tf-btn" data-tf="1w">1W</button>
+      </span></h3>
+      <div class="chart-box"><canvas id="chart"></canvas></div>
+    </div>
+
+    <!-- Trade Plan -->
+    <div class="trade-plan" id="tradePlan">
+      <h3 style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1.5px;font-weight:800;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border)">GENERATED TRADE PLAN</h3>
+      <div id="planBody"></div>
+    </div>
+
+    <!-- AI Debate -->
+    <div class="debate" id="debate">
+      <h3 style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:1.5px;font-weight:800;margin-bottom:12px">ADVERSARIAL AI DEBATE</h3>
+      <div class="d-grid" id="dgrid"></div>
+    </div>
+
+    <!-- Completion -->
+    <div class="completion" id="completion">
+      <div class="t">✓ ANALYSIS COMPLETE</div>
+      <div class="time" id="totalTime">--</div>
+      <div class="sub">Full 9-stage pipeline executed with real-time data</div>
+    </div>
+
+    <!-- Trade Log -->
+    <div class="panel" style="margin-top:14px">
+      <h3>TRADE LOG</h3>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="text-align:left;border-bottom:1px solid var(--border)">
+              <th style="padding:8px">Asset</th>
+              <th style="padding:8px">Direction</th>
+              <th style="padding:8px">Entry</th>
+              <th style="padding:8px">Exit</th>
+              <th style="padding:8px">P&L</th>
+              <th style="padding:8px">Conf</th>
+              <th style="padding:8px">Regime</th>
+              <th style="padding:8px">Time</th>
+            </tr>
+          </thead>
+          <tbody id="tradesBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- System Log -->
+    <div class="panel" style="margin-top:14px">
+      <h3>SYSTEM LOG</h3>
+      <div class="log" id="sysLog"></div>
+    </div>
+  </div>
+
+  <!-- Features Section -->
+  <section class="section" id="features">
+    <div class="container">
+      <div class="section-head">
+        <div class="section-eyebrow">Core Capabilities</div>
+        <h2>Powered by <span class="accent">Advanced Mathematics</span></h2>
+        <p>TITAN 3.0 combines topological data analysis, reinforcement learning, and ensemble methods to deliver institutional-grade trading signals.</p>
+      </div>
+      <div class="features-grid">
+        <div class="feature">
+          <div class="feature-icon">🔺</div>
+          <h3>Topological Data Analysis</h3>
+          <p>Persistent homology and Betti numbers detect market regime changes invisible to traditional technical analysis.</p>
+          <span class="tag">TDA</span>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🧠</div>
+          <h3>Reinforcement Learning</h3>
+          <p>PPO-based agents optimize entry/exit timing through millions of simulated trades in realistic market environments.</p>
+          <span class="tag">RL</span>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🔄</div>
+          <h3>Walk-Forward Optimization</h3>
+          <p>Rolling window validation prevents overfitting and ensures strategy robustness across market conditions.</p>
+          <span class="tag">WFO</span>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🌐</div>
+          <h3>Resilient Data Pipeline</h3>
+          <p>Circuit breaker patterns and multi-source fallbacks guarantee 99.9% uptime for critical market data.</p>
+          <span class="tag">ETL</span>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">📊</div>
+          <h3>50+ Technical Indicators</h3>
+          <p>Comprehensive feature engineering including RSI, MACD, Bollinger Bands, ATR, ADX, Hurst exponent, and more.</p>
+          <span class="tag">FEATURES</span>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">⚖️</div>
+          <h3>Adversarial AI Debate</h3>
+          <p>Bull vs Bear AI agents debate each signal, with a Judge model synthesizing the final conviction score.</p>
+          <span class="tag">DEBATE</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pipeline Section -->
+  <section class="section" id="pipeline" style="background:var(--bg2)">
+    <div class="container">
+      <div class="section-head">
+        <div class="section-eyebrow">How It Works</div>
+        <h2>9-Stage <span class="accent">Analysis Pipeline</span></h2>
+        <p>From raw data to executable trade plan in under 2 seconds.</p>
+      </div>
+      <div class="pipeline-grid">
+        <div class="pipe-step">
+          <div class="pipe-num">1</div>
+          <h4>Data Ingestion</h4>
+          <p>Fetch real-time OHLCV from Binance, Yahoo Finance, or Alpha Vantage with automatic fallback.</p>
+          <span class="time">&lt;200ms</span>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-num">2</div>
+          <h4>Regime Detection</h4>
+          <p>HMM + TDA identify market state: trending, ranging, volatile, or mean-reverting.</p>
+          <span class="time">&lt;150ms</span>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-num">3</div>
+          <h4>Cluster Analysis</h4>
+          <p>5 independent indicator clusters generate consensus signals with strength scoring.</p>
+          <span class="time">&lt;300ms</span>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-num">4</div>
+          <h4>Statistical Models</h4>
+          <p>Z-score, autocorrelation, Hurst exponent, and fractal dimension calculations.</p>
+          <span class="time">&lt;100ms</span>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-num">5</div>
+          <h4>ML Scoring</h4>
+          <p>LightGBM ensemble produces directional bias and confidence score.</p>
+          <span class="time">&lt;200ms</span>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-num">6</div>
+          <h4>Pre-Signal Gate</h4>
+          <p>7-point hard-stop verification prevents low-quality signals from executing.</p>
+          <span class="time">&lt;50ms</span>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-num">7</div>
+          <h4>Walk-Forward Backtest</h4>
+          <p>Vectorbt-powered OOS testing with 15% haircut on win rate for conservatism.</p>
+          <span class="time">&lt;400ms</span>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-num">8</div>
+          <h4>AI Debate</h4>
+          <p>Adversarial bull/bear agents debate, Judge synthesizes final verdict.</p>
+          <span class="time">&lt;300ms</span>
+        </div>
+        <div class="pipe-step">
+          <div class="pipe-num">9</div>
+          <h4>Signal Generation</h4>
+          <p>ATR-based stops, position sizing, and risk-reward optimization at live price.</p>
+          <span class="time">&lt;100ms</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing Section -->
+  <section class="section" id="pricing">
+    <div class="container">
+      <div class="section-head">
+        <div class="section-eyebrow">Pricing Plans</div>
+        <h2>Choose Your <span class="accent">Edge</span></h2>
+        <p>From retail traders to institutional desks.</p>
+      </div>
+      <div class="pricing-grid">
+        <div class="price-card">
+          <h3>RETAIL</h3>
+          <div class="price">$49<span class="per">/mo</span></div>
+          <div class="desc">Perfect for individual traders starting their quantitative journey.</div>
+          <ul class="price-features">
+            <li><span class="check">✓</span> 100 analyses/month</li>
+            <li><span class="check">✓</span> Crypto + Stocks</li>
+            <li><span class="check">✓</span> 1H, 4H, 1D timeframes</li>
+            <li><span class="check">✓</span> Basic regime detection</li>
+            <li><span class="check">✓</span> Email support</li>
+          </ul>
+          <button class="btn-price ghost">Start Free Trial</button>
+        </div>
+        <div class="price-card featured">
+          <div class="pop">MOST POPULAR</div>
+          <h3>PROFESSIONAL</h3>
+          <div class="price">$149<span class="per">/mo</span></div>
+          <div class="desc">Advanced tools for serious traders demanding an edge.</div>
+          <ul class="price-features">
+            <li><span class="check">✓</span> Unlimited analyses</li>
+            <li><span class="check">✓</span> All asset classes</li>
+            <li><span class="check">✓</span> All timeframes + custom</li>
+            <li><span class="check">✓</span> TDA + HMM regime detection</li>
+            <li><span class="check">✓</span> Walk-forward backtesting</li>
+            <li><span class="check">✓</span> AI debate module</li>
+            <li><span class="check">✓</span> Priority support</li>
+          </ul>
+          <button class="btn-price primary">Start Free Trial</button>
+        </div>
+        <div class="price-card">
+          <h3>INSTITUTIONAL</h3>
+          <div class="price">Custom</div>
+          <div class="desc">Enterprise-grade infrastructure for funds and family offices.</div>
+          <ul class="price-features">
+            <li><span class="check">✓</span> Everything in Pro</li>
+            <li><span class="check">✓</span> REST + WebSocket API</li>
+            <li><span class="check">✓</span> Custom data sources</li>
+            <li><span class="check">✓</span> On-premise deployment</li>
+            <li><span class="check">✓</span> SLA guarantee</li>
+            <li><span class="check">✓</span> Dedicated account manager</li>
+          </ul>
+          <button class="btn-price ghost">Contact Sales</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section class="section" id="testimonials" style="background:var(--bg2)">
+    <div class="container">
+      <div class="section-head">
+        <div class="section-eyebrow">Testimonials</div>
+        <h2>Trusted by <span class="accent">500+ Traders</span></h2>
+      </div>
+      <div class="testimonials-grid">
+        <div class="testimonial">
+          <div class="stars">★★★★★</div>
+          <div class="quote">"TITAN's regime detection caught the March 2024 crypto reversal 3 days before major moving averages. The TDA module is genuinely next-level."</div>
+          <div class="who">
+            <div class="avatar">MK</div>
+            <div><div class="nm">Michael K.</div><div class="rl">Quant Trader, NYC</div></div>
+          </div>
+        </div>
+        <div class="testimonial">
+          <div class="stars">★★★★★</div>
+          <div class="quote">"The adversarial debate feature alone is worth the subscription. It forces you to confront both sides of the trade before executing."</div>
+          <div class="who">
+            <div class="avatar">SL</div>
+            <div><div class="nm">Sarah L.</div><div class="rl">Portfolio Manager, London</div></div>
+          </div>
+        </div>
+        <div class="testimonial">
+          <div class="stars">★★★★★</div>
+          <div class="quote">"Walk-forward optimization saved me from overfitting disaster. My out-of-sample performance finally matches my backtests."</div>
+          <div class="who">
+            <div class="avatar">JR</div>
+            <div><div class="nm">James R.</div><div class="rl">Prop Trader, Singapore</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="section" id="faq">
+    <div class="container">
+      <div class="section-head">
+        <div class="section-eyebrow">FAQ</div>
+        <h2>Frequently Asked <span class="accent">Questions</span></h2>
+      </div>
+      <div class="faq-wrap">
+        <div class="faq-item" onclick="this.classList.toggle('open')">
+          <div class="faq-q">What data sources does TITAN use? <span class="plus">+</span></div>
+          <div class="faq-a">TITAN connects to Binance (crypto), Yahoo Finance (stocks/ETFs), and Alpha Vantage (forex/futures). The resilient pipeline automatically fails over to backup sources if the primary is unavailable.</div>
+        </div>
+        <div class="faq-item" onclick="this.classList.toggle('open')">
+          <div class="faq-q">How accurate are the signals? <span class="plus">+</span></div>
+          <div class="faq-a">Historical backtests show 55-65% win rates depending on asset class and timeframe. However, past performance doesn't guarantee future results. Always use proper risk management.</div>
+        </div>
+        <div class="faq-item" onclick="this.classList.toggle('open')">
+          <div class="faq-q">Can I use TITAN for automated trading? <span class="plus">+</span></div>
+          <div class="faq-a">Yes! The Professional and Institutional plans include API access for automated execution. We provide client libraries for Python, Node.js, and Go.</div>
+        </div>
+        <div class="faq-item" onclick="this.classList.toggle('open')">
+          <div class="faq-q">Is my data secure? <span class="plus">+</span></div>
+          <div class="faq-a">Absolutely. We use bank-level encryption (AES-256) and never store your API keys. All analysis runs in isolated containers with zero data persistence.</div>
+        </div>
+        <div class="faq-item" onclick="this.classList.toggle('open')">
+          <div class="faq-q">Do you offer a free trial? <span class="plus">+</span></div>
+          <div class="faq-a">Yes, all plans come with a 14-day free trial. No credit card required for the Retail trial. Professional and Institutional trials require verification.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Banner -->
+  <section class="section" style="padding:60px 0">
+    <div class="container">
+      <div style="background:linear-gradient(135deg,rgba(255,107,26,0.15),rgba(255,107,26,0.05));border:1px solid var(--glass-border);border-radius:20px;padding:60px;text-align:center;box-shadow:0 0 60px rgba(255,107,26,0.1)">
+        <h2 style="font-size:clamp(32px,5vw,48px);font-weight:800;letter-spacing:-1.5px;margin-bottom:16px">Ready to Trade with <span class="accent">Institutional Edge</span>?</h2>
+        <p style="font-size:17px;color:var(--t2);max-width:640px;margin:0 auto 32px">Join 500+ traders using TITAN 3.0's advanced mathematical frameworks to discover alpha in any market condition.</p>
+        <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
+          <button class="btn-hero">Start 14-Day Free Trial</button>
+          <button class="btn-nav" style="padding:14px 32px;font-size:14px">Schedule Demo</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer style="border-top:1px solid var(--border);padding:60px 0;background:var(--bg2)">
+    <div class="container">
+      <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px">
+        <div>
+          <div class="logo" style="margin-bottom:16px">
+            <div class="logo-mark">T</div>
+            <span>TITAN 3.0</span>
+          </div>
+          <p style="font-size:13px;color:var(--t2);line-height:1.6;max-width:300px">Advanced quantitative trading intelligence powered by topological data analysis, reinforcement learning, and adversarial AI.</p>
+        </div>
+        <div>
+          <h4 style="font-size:12px;font-weight:800;color:var(--t1);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:16px">Product</h4>
+          <ul style="list-style:none;padding:0">
+            <li style="margin-bottom:8px"><a href="#" style="font-size:13px;color:var(--t2)">Features</a></li>
+            <li style="margin-bottom:8px"><a href="#" style="font-size:13px;color:var(--t2)">Pricing</a></li>
+            <li style="margin-bottom:8px"><a href="#" style="font-size:13px;color:var(--t2)">API</a></li>
+            <li style="margin-bottom:8px"><a href="#" style="font-size:13px;color:var(--t2)">Changelog</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 style="font-size:12px;font-weight:800;color:var(--t1);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:16px">Resources</h4>
+          <ul style="list-style:none;padding:0">
+            <li style="margin-bottom:8px"><a href="#" style="font-size:13px;color:var(--t2)">Documentation</a></li>
+            <li style="margin-bottom:8px"><a href="#" style="font-size:13px;color:var(--t2)">Blog</a></li>
+            <li style="margin-bottom:8px"><a href="#" style="font-size:13px;color:var(--t2)">Community</a></li>
+            <li style="margin-bottom:8px"><a href="#" style="font-size:13px;color:var(--t2)">Support</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 style="font-size:12px;font-weight:800;color:var(--t1);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:16px">Legal</h4>
+          <ul style="list-style:none;padding:0">
+            <li style="margin-bottom:8px"><a href="#" style="font-size:13px;color:var(--t2)">Privacy Policy</a></li>
+            <li style="margin-bottom:8px"><a href="#" style="font-size:13px;color:var(--t2)">Terms of Service</a></li>
+            <li style="margin-bottom:8px"><a href="#" style="font-size:13px;color:var(--t2)">Risk Disclosure</a></li>
+            <li style="margin-bottom:8px"><a href="#" style="font-size:13px;color:var(--t2)">Cookie Policy</a></li>
+          </ul>
+        </div>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px">
+        <p style="font-size:12px;color:var(--t3)">© 2024 TITAN Trading Systems. All rights reserved.</p>
+        <div style="display:flex;gap:16px">
+          <a href="#" style="font-size:13px;color:var(--t2)">Twitter</a>
+          <a href="#" style="font-size:13px;color:var(--t2)">Discord</a>
+          <a href="#" style="font-size:13px;color:var(--t2)">GitHub</a>
+          <a href="#" style="font-size:13px;color:var(--t2)">LinkedIn</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+</div>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
