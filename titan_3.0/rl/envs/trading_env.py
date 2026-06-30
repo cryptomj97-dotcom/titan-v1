@@ -10,6 +10,9 @@ import pandas as pd
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass
 from enum import IntEnum
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Action(IntEnum):
@@ -295,14 +298,14 @@ class TradingEnv(gym.Env):
     def render(self):
         """Render the environment."""
         if self.render_mode == 'human':
-            print(f"Step: {self.current_step}")
-            print(f"Balance: ${self.balance:,.2f}")
-            print(f"Equity: ${self.equity:,.2f}")
-            print(f"Position: {self.position}")
-            print(f"Realized PnL: ${self.realized_pnl:,.2f}")
-            print(f"Unrealized PnL: ${self.unrealized_pnl:,.2f}")
-            print(f"Total Trades: {self.total_trades}")
-            print("-" * 40)
+            logger.info(f"Step: {self.current_step}")
+            logger.info(f"Balance: ${self.balance:,.2f}")
+            logger.info(f"Equity: ${self.equity:,.2f}")
+            logger.info(f"Position: {self.position}")
+            logger.info(f"Realized PnL: ${self.realized_pnl:,.2f}")
+            logger.info(f"Unrealized PnL: ${self.unrealized_pnl:,.2f}")
+            logger.info(f"Total Trades: {self.total_trades}")
+            logger.info("-" * 40)
     
     def close(self):
         """Clean up resources."""

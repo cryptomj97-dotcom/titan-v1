@@ -12,6 +12,8 @@ from dataclasses import dataclass
 from enum import Enum
 import logging
 
+from core.safe_eval import safe_eval_expression
+
 logger = logging.getLogger(__name__)
 
 class SignalType(Enum):
@@ -188,8 +190,9 @@ class Backtester:
             # Entry Logic
             if position is None:
                 try:
-                    # Evaluate entry condition string safely
-                    if eval(strategy.entry_condition, {"df": df, "np": np, "pd": pd}, {"i": i}):
+                    # Evaluate entry condition string safely using AST-based evaluator
+                    context = {"df": df, "np": np, "pd": pd, "i": i}
+                    if safe_eval_expression(strategy.entry_condition, context):
                         shares = int((current_capital * strategy.position_size_pct) / row['close'])
                         if shares > 0:
                             position = {
@@ -200,6 +203,8 @@ class Backtester:
                                 'stop_loss': row['close'] * (1 - strategy.stop_loss_pct),
                                 'take_profit': row['close'] * (1 + strategy.take_profit_pct)
                             }
+                except ValueError as e:
+                    logger.error(f"Invalid entry condition expression: {e}")
                 except Exception as e:
                     logger.error(f"Error evaluating entry condition: {e}")
 
@@ -217,8 +222,12 @@ class Backtester:
                 # Check Strategy Exit Condition
                 else:
                     try:
-                        if eval(strategy.exit_condition, {"df": df, "np": np, "pd": pd}, {"i": i}):
+                        # Evaluate exit condition string safely using AST-based evaluator
+                        context = {"df": df, "np": np, "pd": pd, "i": i}
+                        if safe_eval_expression(strategy.exit_condition, context):
                             exit_triggered = True
+                    except ValueError as e:
+                        logger.error(f"Invalid exit condition expression: {e}")
                     except Exception as e:
                         logger.error(f"Error evaluating exit condition: {e}")
 
