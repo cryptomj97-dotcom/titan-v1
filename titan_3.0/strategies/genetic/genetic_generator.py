@@ -10,8 +10,11 @@ from dataclasses import dataclass, field
 from datetime import datetime
 import pandas as pd
 from copy import deepcopy
+import logging
 
 from ..core.strategy_base import BaseStrategy, TradeSignal, SignalType, Timeframe
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -454,8 +457,8 @@ class GeneticStrategyGenerator:
         Returns:
             Best chromosome found
         """
-        print(f"Starting genetic evolution for {self.base_strategy_type} strategy...")
-        print(f"Population size: {self.population_size}, Generations: {self.generations}")
+        logger.info(f"Starting genetic evolution for {self.base_strategy_type} strategy...")
+        logger.info(f"Population size: {self.population_size}, Generations: {self.generations}")
         
         self.initialize_population()
         
@@ -466,11 +469,11 @@ class GeneticStrategyGenerator:
                 callback(self.generation, self.best_chromosome, self.fitness_history[-1])
             
             if self.generation % 10 == 0:
-                print(f"Generation {self.generation}: Best fitness = {self.fitness_history[-1]:.4f}")
+                logger.info(f"Generation {self.generation}: Best fitness = {self.fitness_history[-1]:.4f}")
         
-        print(f"\nEvolution complete!")
-        print(f"Best fitness: {self.best_chromosome.fitness:.4f}")
-        print(f"Best parameters: {self.best_chromosome.to_parameters()}")
+        logger.info(f"\nEvolution complete!")
+        logger.info(f"Best fitness: {self.best_chromosome.fitness:.4f}")
+        logger.info(f"Best parameters: {self.best_chromosome.to_parameters()}")
         
         return self.best_chromosome
     
