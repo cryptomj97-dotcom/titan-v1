@@ -124,7 +124,7 @@ class TradingEnvironment(gym.Env):
 
     def render(self, mode='human'):
         profit = self.net_worth - self.initial_capital
-        print(f"Step: {self.current_step}, Net Worth: {self.net_worth:.2f}, Profit: {profit:.2f}")
+        logger.debug(f"Step: {self.current_step}, Net Worth: {self.net_worth:.2f}, Profit: {profit:.2f}")
 
 class PPOAgent:
     """

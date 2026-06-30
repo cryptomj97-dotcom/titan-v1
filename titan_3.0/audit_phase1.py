@@ -3,6 +3,10 @@ TITAN 3.0 - Phase 1 Audit & Improvements
 Core Infrastructure Enhancements
 """
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 # IMPROVEMENTS MADE IN PHASE 1:
 
 # 1. Enhanced Configuration System
@@ -34,11 +38,12 @@ Core Infrastructure Enhancements
 # - core/exceptions/__init__.py (enhanced with retry logic)
 # - core/health.py (NEW - health check system)
 
-print("Phase 1 Audit Complete - Core Infrastructure Improved")
-print("Key Enhancements:")
-print("  ✓ Config validation with pydantic")
-print("  ✓ Async logging support")
-print("  ✓ Distributed tracing IDs")
-print("  ✓ Automatic retry with exponential backoff")
-print("  ✓ Health check system")
-print("  ✓ Graceful degradation support")
+if __name__ == "__main__":
+    logger.info("Phase 1 Audit Complete - Core Infrastructure Improved")
+    logger.info("Key Enhancements:")
+    logger.info("  ✓ Config validation with pydantic")
+    logger.info("  ✓ Async logging support")
+    logger.info("  ✓ Distributed tracing IDs")
+    logger.info("  ✓ Automatic retry with exponential backoff")
+    logger.info("  ✓ Health check system")
+    logger.info("  ✓ Graceful degradation support")

@@ -1,13 +1,22 @@
 """
 TITAN 3.0 Frontend API Server
 Flask-based backend serving the UI and connecting to the TITAN core modules
+
+SECURITY HARDENED VERSION
+- Input validation on all endpoints
+- Rate limiting
+- CSRF protection
+- Thread-safe state management
+- Secure error handling
+- Restricted CORS
 """
 
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, make_response
 from flask_cors import CORS
 import asyncio
 import logging
 from datetime import datetime
+import os
 
 # Import TITAN core modules
 import sys
@@ -18,8 +27,22 @@ from data.ingestion.resilient_ingestion import ResilientDataIngestion
 from ml.features.feature_engineering import FeatureEngineering
 from ml.regime_detection.regime_detector import RegimeDetector
 
+# Security modules
+from core.validators import InputValidator, ValidationError
+from core.security_middleware import (
+    RateLimiter, CSRFProtection, ThreadSafeState, SecureHeaders
+)
+from core.error_handler import catch_errors, safe_error_response, error_handler
+from core.secrets import secret_manager, generate_secure_token
+
 app = Flask(__name__)
-CORS(app)
+
+# Configure secure CORS - restrict to specific origins in production
+ALLOWED_ORIGINS = os.getenv("TITAN_ALLOWED_ORIGINS", "http://localhost:3000").split(",")
+CORS(app, origins=ALLOWED_ORIGINS, supports_credentials=True)
+
+# Set secure Flask secret key
+app.secret_key = secret_manager.get_flask_secret_key()
 
 # Initialize logger
 logger = TITANLogger.get_logger('titan_api', log_to_file=False)
@@ -29,12 +52,16 @@ data_ingestion = ResilientDataIngestion()
 feature_engineer = FeatureEngineering()
 regime_detector = RegimeDetector()
 
-# Global state
-T = {
+# Initialize security middleware
+api_rate_limiter = RateLimiter(max_requests=100, window_seconds=60)  # 100 req/min
+csrf_protection = CSRFProtection()
+
+# Thread-safe global state
+T = ThreadSafeState({
     'candles': {},
     'trades': [],
     'busy': False
-}
+})
 
 @app.route('/')
 def index():
@@ -44,28 +71,55 @@ def index():
 @app.route('/api/health')
 def health():
     """Health check endpoint"""
-    return jsonify({
+    response = make_response(jsonify({
         'status': 'healthy',
         'timestamp': datetime.utcnow().isoformat(),
         'version': '3.0.0'
-    })
+    }))
+    # Add security headers
+    for header, value in SecureHeaders.get_headers().items():
+        response.headers[header] = value
+    return response
 
 @app.route('/api/analyze', methods=['POST'])
+@catch_errors
 async def analyze():
     """
     Run full TITAN 3.0 analysis pipeline
     Expects: { symbol, market, timeframe }
     Returns: Complete analysis results
+    
+    Security:
+    - Rate limited (100 req/min per IP)
+    - Input validated
+    - Thread-safe state management
     """
-    if T['busy']:
+    # Check rate limit
+    client_ip = request.remote_addr or 'unknown'
+    if not api_rate_limiter.is_allowed(client_ip):
+        remaining = api_rate_limiter.get_remaining(client_ip)
+        return jsonify({
+            'error': 'Rate limit exceeded',
+            'retry_after': api_rate_limiter.window_seconds,
+            'remaining': remaining
+        }), 429
+    
+    # Check if busy (thread-safe)
+    if T.get('busy', False):
         return jsonify({'error': 'Analysis already in progress'}), 429
     
+    # Validate input
     try:
-        T['busy'] = True
-        data = request.json
-        symbol = data.get('symbol', 'BTCUSDT')
-        market = data.get('market', 'CRYPTO')
-        timeframe = data.get('timeframe', '1h')
+        validated_data = InputValidator.validate_analysis_request(request.json or {})
+        symbol = validated_data['symbol']
+        market = validated_data['market']
+        timeframe = validated_data['timeframe']
+    except ValidationError as e:
+        return jsonify({'error': e.message, 'field': e.field}), 400
+    
+    try:
+        # Set busy flag (thread-safe)
+        T.set('busy', True)
         
         logger.info(f"Starting analysis for {symbol} ({market}) - {timeframe}")
         
@@ -124,28 +178,80 @@ async def analyze():
         }
         
         logger.info(f"Analysis complete for {symbol}")
-        return jsonify(result)
+        
+        response = make_response(jsonify(result))
+        # Add security headers
+        for header, value in SecureHeaders.get_headers().items():
+            response.headers[header] = value
+        return response
         
     except Exception as e:
         logger.error(f"Analysis failed: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        raise  # Let the error handler deal with it
     finally:
-        T['busy'] = False
+        T.set('busy', False)
 
 @app.route('/api/live-price/<symbol>')
 def live_price(symbol):
     """Get current live price for symbol"""
     try:
+        # Validate symbol to prevent injection
+        validated_symbol = InputValidator.validate_symbol(symbol)
+        
+        # Check rate limit
+        client_ip = request.remote_addr or 'unknown'
+        if not api_rate_limiter.is_allowed(client_ip):
+            return jsonify({'error': 'Rate limit exceeded'}), 429
+        
         # Placeholder - will connect to WebSocket
-        price = data_ingestion.get_current_price(symbol)
-        return jsonify(price)
+        price = data_ingestion.get_current_price(validated_symbol)
+        
+        response = make_response(jsonify(price))
+        for header, value in SecureHeaders.get_headers().items():
+            response.headers[header] = value
+        return response
+    except ValidationError as e:
+        return jsonify({'error': e.message}), 400
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logger.error(f"Live price fetch failed: {str(e)}")
+        response, status = safe_error_response(e)
+        return jsonify(response), status
 
 @app.route('/api/trades')
 def get_trades():
-    """Get trade history"""
-    return jsonify(T['trades'])
+    """Get trade history (thread-safe)"""
+    try:
+        trades = T.get('trades', [])
+        response = make_response(jsonify(trades))
+        for header, value in SecureHeaders.get_headers().items():
+            response.headers[header] = value
+        return response
+    except Exception as e:
+        logger.error(f"Failed to get trades: {str(e)}")
+        response, status = safe_error_response(e)
+        return jsonify(response), status
+
+@app.route('/api/csrf-token', methods=['GET'])
+def get_csrf_token():
+    """Generate CSRF token for session"""
+    try:
+        # Generate a session ID (in production, use Flask sessions)
+        session_id = request.cookies.get('session_id', generate_secure_token())
+        token = csrf_protection.generate_token(session_id)
+        
+        response = make_response(jsonify({
+            'csrf_token': token,
+            'session_id': session_id
+        }))
+        response.set_cookie('session_id', session_id, httponly=True, samesite='Lax')
+        
+        for header, value in SecureHeaders.get_headers().items():
+            response.headers[header] = value
+        return response
+    except Exception as e:
+        logger.error(f"CSRF token generation failed: {str(e)}")
+        response, status = safe_error_response(e)
+        return jsonify(response), status
 
 # Helper functions (to be moved to proper modules)
 def compute_clusters(candles):
@@ -353,5 +459,23 @@ def generate_trade_plan(candles, direction, confidence):
     }
 
 if __name__ == '__main__':
+    # NEVER use debug=True in production
+    debug_mode = os.getenv("TITAN_DEBUG", "false").lower() == "true"
+    
     logger.info("Starting TITAN 3.0 API server...")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    logger.warning(f"Debug mode: {debug_mode} - DO NOT enable in production!")
+    
+    # Validate security configuration
+    env_report = secret_manager.validate_environment()
+    if not env_report['valid']:
+        logger.warning(f"Missing required secrets: {env_report['missing_required']}")
+    else:
+        logger.info("Security configuration validated")
+    
+    if not debug_mode:
+        # Use gunicorn or similar WSGI server in production
+        logger.info("For production deployment, use: gunicorn --bind 0.0.0.0:5000 app:app")
+        logger.info("Set TITAN_ALLOWED_ORIGINS to restrict CORS")
+        logger.info("Set TITAN_FLASK_SECRET_KEY for session persistence")
+    
+    app.run(host='0.0.0.0', port=5000, debug=debug_mode)

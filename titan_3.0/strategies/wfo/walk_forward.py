@@ -9,8 +9,11 @@ from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from copy import deepcopy
+import logging
 
 from ..core.strategy_base import BaseStrategy, StrategyPerformance, TradeSignal
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -278,11 +281,11 @@ class WalkForwardOptimizer:
         Returns:
             WalkForwardSummary with aggregate statistics
         """
-        print(f"Starting Walk-Forward Optimization...")
-        print(f"Train window: {self.train_window_days} days, Test window: {self.test_window_days} days")
+        logger.info("Starting Walk-Forward Optimization...")
+        logger.info(f"Train window: {self.train_window_days} days, Test window: {self.test_window_days} days")
         
         windows = self.generate_windows(data)
-        print(f"Generated {len(windows)} walk-forward windows")
+        logger.info(f"Generated {len(windows)} walk-forward windows")
         
         self.results = []
         train_sharpes = []
@@ -294,9 +297,9 @@ class WalkForwardOptimizer:
         profitable_count = 0
         
         for i, (train_data, test_data) in enumerate(windows):
-            print(f"\nIteration {i+1}/{len(windows)}")
-            print(f"  Train: {train_data.index[0].date()} to {train_data.index[-1].date()}")
-            print(f"  Test:  {test_data.index[0].date()} to {test_data.index[-1].date()}")
+            logger.info(f"Iteration {i+1}/{len(windows)}")
+            logger.info(f"  Train: {train_data.index[0].date()} to {train_data.index[-1].date()}")
+            logger.info(f"  Test:  {test_data.index[0].date()} to {test_data.index[-1].date()}")
             
             # Align features and regimes with data
             train_features = {k: v.loc[train_data.index] if hasattr(v, 'loc') else v for k, v in features.items()}
@@ -351,8 +354,8 @@ class WalkForwardOptimizer:
             if test_return > 0:
                 profitable_count += 1
             
-            print(f"  Train Sharpe: {train_sharpe:.3f}, Test Sharpe: {test_sharpe:.3f}")
-            print(f"  Train Return: {train_return:.2%}, Test Return: {test_return:.2%}")
+            logger.info(f"  Train Sharpe: {train_sharpe:.3f}, Test Sharpe: {test_sharpe:.3f}")
+            logger.info(f"  Train Return: {train_return:.2%}, Test Return: {test_return:.2%}")
         
         # Calculate summary statistics
         avg_train_sharpe = np.mean(train_sharpes)
@@ -392,16 +395,16 @@ class WalkForwardOptimizer:
         self.best_parameters = final_params
         self.is_optimized = True
         
-        print(f"\n{'='*60}")
-        print(f"WALK-FORWARD OPTIMIZATION COMPLETE")
-        print(f"{'='*60}")
-        print(f"Iterations: {summary.total_iterations}")
-        print(f"Profitable: {summary.profitable_iterations}/{summary.total_iterations} ({profitability_rate:.1%})")
-        print(f"Avg Train Sharpe: {avg_train_sharpe:.3f} (+/- {std_train_sharpe:.3f})")
-        print(f"Avg Test Sharpe:  {avg_test_sharpe:.3f} (+/- {std_test_sharpe:.3f})")
-        print(f"Efficiency Ratio: {efficiency_ratio:.3f}")
-        print(f"Stability Score:  {stability_score:.3f}")
-        print(f"{'='*60}")
+        logger.info("="*60)
+        logger.info("WALK-FORWARD OPTIMIZATION COMPLETE")
+        logger.info("="*60)
+        logger.info(f"Iterations: {summary.total_iterations}")
+        logger.info(f"Profitable: {summary.profitable_iterations}/{summary.total_iterations} ({profitability_rate:.1%})")
+        logger.info(f"Avg Train Sharpe: {avg_train_sharpe:.3f} (+/- {std_train_sharpe:.3f})")
+        logger.info(f"Avg Test Sharpe:  {avg_test_sharpe:.3f} (+/- {std_test_sharpe:.3f})")
+        logger.info(f"Efficiency Ratio: {efficiency_ratio:.3f}")
+        logger.info(f"Stability Score:  {stability_score:.3f}")
+        logger.info("="*60)
         
         return summary
     

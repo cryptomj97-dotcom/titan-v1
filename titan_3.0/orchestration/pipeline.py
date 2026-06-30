@@ -146,14 +146,14 @@ def main():
     titan = TITANPipeline(config)
     result = titan.run_full_cycle("AAPL", config["start_date"], config["end_date"])
     
-    print("\n=== TITAN 3.0 ANALYSIS COMPLETE ===")
-    print(f"Symbol: {result['symbol']}")
-    print(f"Regime: {result['regime']}")
-    print(f"Strategy: {result['strategy']}")
-    print(f"Debate Decision: {result['debate_verdict']['decision']} (Conf: {result['debate_verdict']['confidence']})")
-    print(f"Execution: {result['execution']['status']}")
+    logger.info("\n=== TITAN 3.0 ANALYSIS COMPLETE ===")
+    logger.info(f"Symbol: {result['symbol']}")
+    logger.info(f"Regime: {result['regime']}")
+    logger.info(f"Strategy: {result['strategy']}")
+    logger.info(f"Debate Decision: {result['debate_verdict']['decision']} (Conf: {result['debate_verdict']['confidence']})")
+    logger.info(f"Execution: {result['execution']['status']}")
     if 'backtest_metrics' in result and 'wfo_avg_sharpe' in result['backtest_metrics']:
-        print(f"WFO Sharpe: {result['backtest_metrics']['wfo_avg_sharpe']:.2f}")
+        logger.info(f"WFO Sharpe: {result['backtest_metrics']['wfo_avg_sharpe']:.2f}")
 
 if __name__ == "__main__":
     main()
