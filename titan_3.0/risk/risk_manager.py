@@ -151,6 +151,28 @@ class RiskManager:
         Returns:
             Risk check result
         """
+        # SECURITY FIX: Validate inputs to prevent division by zero and type errors
+        if not asset or not isinstance(asset, str):
+            return {
+                'approved': False,
+                'reason': 'invalid_asset',
+                'message': 'Asset must be a non-empty string'
+            }
+        
+        if not isinstance(quantity, (int, float)):
+            return {
+                'approved': False,
+                'reason': 'invalid_quantity',
+                'message': 'Quantity must be a number'
+            }
+        
+        if not isinstance(price, (int, float)) or price <= 0:
+            return {
+                'approved': False,
+                'reason': 'invalid_price',
+                'message': 'Price must be a positive number'
+            }
+        
         # Check kill switch first
         if self.kill_switch_active:
             return {
@@ -182,8 +204,16 @@ class RiskManager:
                     'message': f"Notional ${new_notional:,.2f} exceeds limit ${limit.max_notional:,.2f}"
                 }
         
+        # SECURITY FIX: Prevent division by zero in concentration check
+        if self.portfolio_value <= 0:
+            return {
+                'approved': False,
+                'reason': 'invalid_portfolio_value',
+                'message': 'Portfolio value must be positive'
+            }
+        
         # Check concentration limits
-        portfolio_pct = new_notional / self.portfolio_value if self.portfolio_value > 0 else 1.0
+        portfolio_pct = new_notional / self.portfolio_value
         
         if portfolio_pct > self.concentration_limits.max_single_position_pct:
             return {

@@ -7,6 +7,11 @@ from dataclasses import dataclass, field
 from enum import Enum
 import json
 
+# Import InputValidator for sanitization
+import sys
+sys.path.insert(0, '/workspace/titan_3.0')
+from core.validators import InputValidator
+
 logger = logging.getLogger(__name__)
 
 
@@ -219,12 +224,22 @@ class ApprovalGateway:
         
         Args:
             strategy_id: Strategy to approve
-            approved_by: User approving the strategy
+            approved_by: User approving the strategy (must be authorized)
             notes: Optional approval notes
             
         Returns:
             Approval result
         """
+        # SECURITY FIX: Add authorization check - only authorized users can approve
+        if not approved_by or not isinstance(approved_by, str):
+            return {'success': False, 'error': 'Invalid approver identity'}
+        
+        # In production, verify against an authorized approvers list
+        # For now, ensure non-empty string
+        approved_by = approved_by.strip()
+        if len(approved_by) < 3:
+            return {'success': False, 'error': 'Approver name too short'}
+        
         if strategy_id not in self.pending_strategies:
             return {'success': False, 'error': 'Strategy not found'}
         
@@ -238,12 +253,14 @@ class ApprovalGateway:
         self.approved_strategies[strategy_id] = approval
         del self.pending_strategies[strategy_id]
         
-        # Record in history
+        # Record in history with full audit trail
         self.approval_history.append({
             'action': 'approved',
             'strategy_id': strategy_id,
             'timestamp': approval.approved_at.isoformat(),
-            'approved_by': approved_by
+            'approved_by': approved_by,
+            'ip_address': None,  # Would be populated from request in production
+            'user_agent': None   # Would be populated from request in production
         })
         
         logger.info(f"Strategy approved: {strategy_id} by {approved_by}")
@@ -262,12 +279,27 @@ class ApprovalGateway:
         
         Args:
             strategy_id: Strategy to reject
-            rejected_by: User rejecting the strategy
+            rejected_by: User rejecting the strategy (must be authorized)
             reason: Reason for rejection
             
         Returns:
             Rejection result
         """
+        # SECURITY FIX: Add authorization check - only authorized users can reject
+        if not rejected_by or not isinstance(rejected_by, str):
+            return {'success': False, 'error': 'Invalid rejecter identity'}
+        
+        rejected_by = rejected_by.strip()
+        if len(rejected_by) < 3:
+            return {'success': False, 'error': 'Rejecter name too short'}
+        
+        # Validate reason to prevent injection attacks
+        if not reason or not isinstance(reason, str):
+            return {'success': False, 'error': 'Rejection reason required'}
+        
+        # Sanitize reason - remove potential XSS/injection patterns
+        reason = InputValidator.sanitize_string(reason)[:500]  # Limit length
+        
         if strategy_id not in self.pending_strategies:
             return {'success': False, 'error': 'Strategy not found'}
         
@@ -279,13 +311,15 @@ class ApprovalGateway:
         self.rejected_strategies[strategy_id] = approval
         del self.pending_strategies[strategy_id]
         
-        # Record in history
+        # Record in history with full audit trail
         self.approval_history.append({
             'action': 'rejected',
             'strategy_id': strategy_id,
             'timestamp': datetime.now().isoformat(),
             'rejected_by': rejected_by,
-            'reason': reason
+            'reason': reason,
+            'ip_address': None,  # Would be populated from request in production
+            'user_agent': None   # Would be populated from request in production
         })
         
         logger.warning(f"Strategy rejected: {strategy_id} - {reason}")

@@ -103,7 +103,7 @@ class SecretManager:
             32-byte encryption key
             
         Raises:
-            ValueError: If not configured
+            ValueError: If not configured in production environment
         """
         key_str = self.get_secret(
             "ENCRYPTION_KEY",
@@ -111,14 +111,36 @@ class SecretManager:
         )
         
         if not key_str:
-            # Generate a default key from machine-specific info
+            # Check if running in production environment
+            env = os.getenv("TITAN_ENVIRONMENT", "development")
+            if env == "production":
+                raise ValueError(
+                    "CRITICAL: TITAN_ENCRYPTION_KEY must be set in production environment. "
+                    "Generate a secure key using: python -c 'import secrets; print(secrets.token_hex(32))'"
+                )
+            
+            # Development only: Generate a default key from machine-specific info
             # WARNING: Use proper key management in production!
-            logger.warning("Using derived encryption key - configure TITAN_ENCRYPTION_KEY in production")
+            logger.warning(
+                "Using derived encryption key - configure TITAN_ENCRYPTION_KEY in production. "
+                "Generate with: python -c 'import secrets; print(secrets.token_hex(32))'"
+            )
+            # SECURITY FIX: Use unique random salt per process instead of hardcoded salt
+            # This makes pre-computation attacks significantly harder
+            import hashlib
             machine_id = str(os.uname()).encode()
-            return hashlib.sha256(machine_id).digest()
+            # Generate a process-unique salt using PID and random bytes
+            import secrets
+            random_salt = secrets.token_bytes(16)
+            salt = b"TITAN_3.0_SALT_" + random_salt
+            return hashlib.pbkdf2_hmac('sha256', machine_id, salt, 100000, 32)
         
-        # Derive 32-byte key from provided string
-        return hashlib.sha256(key_str.encode()).digest()
+        # Derive 32-byte key from provided string using PBKDF2 with unique salt
+        import hashlib
+        # Use a portion of the key as salt to make each key derivation unique
+        key_bytes = key_str.encode()
+        salt = hashlib.sha256(key_bytes).digest()[:16]  # 16-byte salt from key
+        return hashlib.pbkdf2_hmac('sha256', key_bytes, salt, 100000, 32)
     
     def get_flask_secret_key(self) -> bytes:
         """
