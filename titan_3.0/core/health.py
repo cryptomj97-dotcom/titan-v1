@@ -309,6 +309,6 @@ if __name__ == "__main__":
     async def main():
         health = await check_system_health()
         import json
-        print(json.dumps(health, indent=2))
+        logger.info("System Health Check:\n%s", json.dumps(health, indent=2))
     
     asyncio.run(main())

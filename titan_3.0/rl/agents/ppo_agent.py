@@ -11,6 +11,9 @@ from torch.distributions import Categorical
 from typing import Dict, List, Tuple, Optional, Any
 from dataclasses import dataclass
 import pandas as pd
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -372,7 +375,7 @@ class PPOAgent:
         Returns:
             Training history
         """
-        print(f"Starting PPO training for {total_timesteps} timesteps...")
+        logger.info(f"Starting PPO training for {total_timesteps} timesteps...")
         
         obs, _ = env.reset()
         episode_rewards = []
@@ -406,10 +409,10 @@ class PPOAgent:
                 # Log progress
                 if len(episode_rewards) % log_interval == 0:
                     avg_reward = np.mean(episode_rewards[-log_interval:])
-                    print(f"Timestep {timestep}: Avg Reward = {avg_reward:.3f}")
+                    logger.info(f"Timestep {timestep}: Avg Reward = {avg_reward:.3f}")
                     
                     if update_info:
-                        print(f"  Policy Loss: {update_info['policy_loss']:.4f}, "
+                        logger.info(f"  Policy Loss: {update_info['policy_loss']:.4f}, "
                               f"Value Loss: {update_info['value_loss']:.4f}")
                 
                 # Callback
@@ -421,10 +424,10 @@ class PPOAgent:
         
         self.training_stats['episode_rewards'] = episode_rewards
         
-        print(f"\nTraining complete!")
-        print(f"Total episodes: {len(episode_rewards)}")
-        print(f"Average reward: {np.mean(episode_rewards):.3f}")
-        print(f"Best reward: {max(episode_rewards):.3f}")
+        logger.info("Training complete!")
+        logger.info(f"Total episodes: {len(episode_rewards)}")
+        logger.info(f"Average reward: {np.mean(episode_rewards):.3f}")
+        logger.info(f"Best reward: {max(episode_rewards):.3f}")
         
         return self.training_stats
     
@@ -436,7 +439,7 @@ class PPOAgent:
             'config': self.config,
             'training_stats': self.training_stats
         }, path)
-        print(f"Model saved to {path}")
+        logger.info(f"Model saved to {path}")
     
     def load(self, path: str):
         """Load model checkpoint."""
@@ -445,4 +448,4 @@ class PPOAgent:
         self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         self.config = checkpoint['config']
         self.training_stats = checkpoint['training_stats']
-        print(f"Model loaded from {path}")
+        logger.info(f"Model loaded from {path}")

@@ -190,7 +190,8 @@ class NSEDataProvider:
                 'day_low': info.day_low,
                 'total_traded_volume': info.last_volume,
             }
-        except:
+        except Exception as e:
+            logger.warning(f"Failed to fetch quote for {symbol}: {e}")
             return None
     
     async def close(self):
@@ -558,31 +559,32 @@ class RealTimeDataManager:
 
 # Example usage
 async def main():
+    logger = logging.getLogger(__name__)
     manager = RealTimeDataManager()
     await manager.initialize()
     
     # Get all active assets
     assets = await manager.get_all_active_assets()
-    print(f"Active NSE stocks: {len(assets['NSE'])}")
-    print(f"Active BSE stocks: {len(assets['BSE'])}")
-    print(f"Active Binance pairs: {len(assets['BINANCE'])}")
+    logger.info(f"Active NSE stocks: {len(assets['NSE'])}")
+    logger.info(f"Active BSE stocks: {len(assets['BSE'])}")
+    logger.info(f"Active Binance pairs: {len(assets['BINANCE'])}")
     
     # Fetch historical data
-    print("\nFetching historical data for RELIANCE (NSE)...")
+    logger.info("\nFetching historical data for RELIANCE (NSE)...")
     nse_data = await manager.fetch_historical(
         'NSE', 'RELIANCE', 
         start_date=datetime(2000, 1, 1)
     )
-    print(f"Got {len(nse_data)} rows")
-    print(nse_data.head())
+    logger.info(f"Got {len(nse_data)} rows")
+    logger.info(f"NSE Data head:\n{nse_data.head()}")
     
     # Start real-time streaming
     def on_tick(tick: TickData):
-        print(f"Tick: {tick.symbol} @ {tick.close} (Vol: {tick.volume})")
+        logger.debug(f"Tick: {tick.symbol} @ {tick.close} (Vol: {tick.volume})")
     
     manager.register_callback(on_tick)
     
-    print("\nStarting real-time stream (Ctrl+C to stop)...")
+    logger.info("\nStarting real-time stream (Ctrl+C to stop)...")
     try:
         await manager.start_streaming(
             nse_symbols=['RELIANCE', 'TCS'],
