@@ -1,0 +1,186 @@
+version: '3.8'
+
+services:
+  # Redis Cluster for State Management & Pub/Sub
+  redis:
+    image: redis:7-alpine
+    container_name: titan-redis
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - titan-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # TimescaleDB for Persistent Time-Series Data
+  timescaledb:
+    image: timescale/timescaledb:latest-pg14
+    container_name: titan-db
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-titan_secure_pass}
+      POSTGRES_USER: titan
+      POSTGRES_DB: titan_market_data
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - titan-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U titan"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Service 1: Flux Ingestor (Real-time WebSocket Streams)
+  flux-ingestor:
+    build:
+      context: .
+      dockerfile: services/flux-ingestor/Dockerfile
+    container_name: titan-flux
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      - REDIS_HOST=redis
+      - BINANCE_WS_URL=wss://stream.binance.com:9443/ws
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    networks:
+      - titan-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.connect(('redis', 6379)); s.close()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Service 2: Titan Core (Strategy Engine, RL, Debate)
+  titan-core:
+    build:
+      context: .
+      dockerfile: services/titan-core/Dockerfile
+    container_name: titan-core
+    depends_on:
+      redis:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    environment:
+      - REDIS_HOST=redis
+      - DB_HOST=timescaledb
+      - DB_PASSWORD=${DB_PASSWORD:-titan_secure_pass}
+      - MODE=${TITAN_MODE:-live}
+    restart: unless-stopped
+    networks:
+      - titan-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os; exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Service 3: Titan Executor (Order Management, Risk)
+  titan-executor:
+    build:
+      context: .
+      dockerfile: services/titan-executor/Dockerfile
+    container_name: titan-executor
+    depends_on:
+      titan-core:
+        condition: service_healthy
+    environment:
+      - REDIS_HOST=redis
+      - DB_HOST=timescaledb
+      - DB_PASSWORD=${DB_PASSWORD:-titan_secure_pass}
+      - PAPER_TRADING=${PAPER_TRADING:-true}
+    restart: unless-stopped
+    networks:
+      - titan-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os; exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Service 4: Titan API (FastAPI Gateway)
+  titan-api:
+    build:
+      context: .
+      dockerfile: services/titan-api/Dockerfile
+    container_name: titan-api
+    depends_on:
+      redis:
+        condition: service_healthy
+      titan-core:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_HOST=redis
+      - DB_HOST=timescaledb
+      - DB_PASSWORD=${DB_PASSWORD:-titan_secure_pass}
+    restart: unless-stopped
+    networks:
+      - titan-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Service 5: Titan Worker (Background Jobs: Backtest, Optimization)
+  titan-worker:
+    build:
+      context: .
+      dockerfile: services/titan-worker/Dockerfile
+    container_name: titan-worker
+    depends_on:
+      redis:
+        condition: service_healthy
+      timescaledb:
+        condition: service_healthy
+    environment:
+      - REDIS_HOST=redis
+      - DB_HOST=timescaledb
+      - DB_PASSWORD=${DB_PASSWORD:-titan_secure_pass}
+    restart: unless-stopped
+    networks:
+      - titan-network
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+
+  # Service 6: Titan Monitor (Prometheus + Grafana Stack)
+  titan-monitor:
+    build:
+      context: .
+      dockerfile: services/titan-monitor/Dockerfile
+    container_name: titan-monitor
+    depends_on:
+      redis:
+        condition: service_healthy
+    ports:
+      - "3000:3000"  # Grafana
+      - "9090:9090"  # Prometheus
+    environment:
+      - REDIS_HOST=redis
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+    restart: unless-stopped
+    networks:
+      - titan-network
+
+networks:
+  titan-network:
+    driver: bridge
+
+volumes:
+  redis_data:
+  db_data:

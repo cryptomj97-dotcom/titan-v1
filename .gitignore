@@ -20,6 +20,10 @@ dist/
 *.egg-info/
 
 # Testing and coverage
+.venv.bak/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
 .coverage
 htmlcov/
 .coverage.*
@@ -76,4 +80,29 @@ target/
 *.tar.bz2
 *.tar.xz
 *.tar.zst
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git/modules/
+*.sublime-workspace
+.pytest_cache/
+.hypothesis/
+.coverage*
+.eggs/
+.egg-info/
+*.egg-info/
+.installed.cfg
+lib/
+lib64/
+pip-delete-this-directory.txt
+.pydevproject
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
 ```
