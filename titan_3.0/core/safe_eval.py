@@ -166,6 +166,22 @@ class SafeExpressionEvaluator:
             pass  # These are safe
         
         elif isinstance(node, ast.Subscript):
+            # SECURITY FIX: Prevent attribute access through subscript
+            # e.g., obj.__class__.__mro__ via obj['__class__']['__mro__']
+            if isinstance(node.slice, (ast.Index, ast.Constant, ast.Name)):
+                # Check if the subscript key is a forbidden attribute
+                if isinstance(node.slice, ast.Index):  # Python < 3.9
+                    slice_val = node.slice.value
+                else:
+                    slice_val = node.slice
+                
+                if isinstance(slice_val, ast.Constant) and isinstance(slice_val.value, str):
+                    if slice_val.value in self.FORBIDDEN_ATTRS:
+                        raise SafeEvalError(f"Forbidden attribute access via subscript: {slice_val.value}")
+                elif isinstance(slice_val, ast.Name):
+                    # Dynamic subscript - validate at eval time
+                    pass
+            
             self._validate_ast(node.value, depth + 1)
             self._validate_ast(node.slice, depth + 1)
         
@@ -223,6 +239,11 @@ class SafeExpressionEvaluator:
         elif isinstance(node, ast.Subscript):
             value = self._eval_node(node.value, context)
             slice_val = self._eval_node(node.slice, context)
+            
+            # SECURITY FIX: Prevent forbidden attribute access via subscript
+            if isinstance(slice_val, str) and slice_val in self.FORBIDDEN_ATTRS:
+                raise SafeEvalError(f"Forbidden attribute access via subscript: {slice_val}")
+            
             return value[slice_val]
         
         elif isinstance(node, ast.Index):  # For Python < 3.9
