@@ -6,6 +6,7 @@ CORS, CSRF, Rate Limiting, and Thread Safety middleware.
 import time
 import threading
 import functools
+import os
 from typing import Dict, Any, Optional, Callable
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -283,25 +284,41 @@ class SecureHeaders:
     }
     
     @classmethod
-    def get_headers(cls, custom_cors: str = None) -> Dict[str, str]:
+    def get_headers(cls, custom_cors: str = None, is_production: bool = False) -> Dict[str, str]:
         """
         Get security headers with optional CORS configuration.
         
         Args:
             custom_cors: Custom CORS origin (default: same origin)
+            is_production: If True, use restrictive CORS policy
             
         Returns:
             Dictionary of headers
         """
         headers = cls.HEADERS.copy()
         
-        if custom_cors:
-            headers['Access-Control-Allow-Origin'] = custom_cors
-            headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
-            headers['Access-Control-Allow-Headers'] = 'Content-Type, X-CSRF-Token'
+        if is_production:
+            # Production: Only allow specific origins
+            if custom_cors:
+                headers['Access-Control-Allow-Origin'] = custom_cors
+            else:
+                # Default to same-origin in production if no specific origin provided
+                headers['Access-Control-Allow-Origin'] = os.getenv('TITAN_ALLOWED_ORIGINS', 'https://localhost:3000').split(',')[0].strip()
+            headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+            headers['Access-Control-Allow-Headers'] = 'Content-Type, X-CSRF-Token, Authorization, X-Request-ID'
             headers['Access-Control-Allow-Credentials'] = 'true'
+            # Additional production security headers
+            headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload'
+            headers['Content-Security-Policy'] = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'"
         else:
-            headers['Access-Control-Allow-Origin'] = '*'  # Default, should be restricted in production
+            # Development: Allow localhost origins
+            if custom_cors:
+                headers['Access-Control-Allow-Origin'] = custom_cors
+            else:
+                headers['Access-Control-Allow-Origin'] = os.getenv('TITAN_ALLOWED_ORIGINS', 'http://localhost:3000,http://localhost:8080').split(',')[0].strip()
+            headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+            headers['Access-Control-Allow-Headers'] = 'Content-Type, X-CSRF-Token, Authorization, X-Request-ID'
+            headers['Access-Control-Allow-Credentials'] = 'true'
         
         return headers
 
