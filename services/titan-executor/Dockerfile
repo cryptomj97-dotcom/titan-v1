@@ -4,10 +4,8 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y gcc libffi-dev libssl-dev && rm -rf /var/lib/apt/lists/*
 
-COPY titan_3.0/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir redis aiohttp
 
-COPY titan_3.0/execution ./execution
-COPY titan_3.0/core ./core
+COPY src/ ./src/
 
-CMD ["python", "-m", "execution.main"]
+CMD ["python", "src/main.py"]

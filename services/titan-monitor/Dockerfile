@@ -4,12 +4,10 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y gcc libffi-dev libssl-dev && rm -rf /var/lib/apt/lists/*
 
-COPY titan_3.0/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir redis aiohttp prometheus-client
 
-COPY titan_3.0/monitoring ./monitoring
-COPY titan_3.0/core ./core
+COPY src/ ./src/
 
-EXPOSE 3000 9090
+EXPOSE 9090
 
-CMD ["python", "-m", "monitoring.dashboard"]
+CMD ["python", "src/main.py"]

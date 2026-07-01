@@ -10,14 +10,11 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements
-COPY titan_3.0/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Python dependencies
+RUN pip install --no-cache-dir websockets redis aiohttp
 
 # Copy service code
-COPY titan_3.0/realtime_flux ./realtime_flux
-COPY titan_3.0/core ./core
-COPY titan_3.0/config ./config
+COPY src/ ./src/
 
 # Run the Flux Ingestor
-CMD ["python", "-m", "realtime_flux.main"]
+CMD ["python", "src/main.py"]
